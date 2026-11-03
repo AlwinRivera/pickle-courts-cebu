@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pickle Courts Cebu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Find and book pickleball courts across Cebu.">
+<meta name="theme-color" content="#1e7a46">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500..800&family=Figtree:wght@400..700&family=DM+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <a class="brand" href="#courts" aria-label="Pickle Courts home">
+      <img src="icons/icon.svg" alt="" width="30" height="30">
+      <span id="brand-name">Pickle Courts</span><span class="sticker s-neon brand-tag">Cebu</span>
+    </a>
+    <button id="install" class="install" hidden>Install app</button>
+  </header>
+
+  <main id="view" tabindex="-1"></main>
+
+  <nav class="tabs" aria-label="Main">
+    <a href="#courts" data-tab="courts"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 12h16M12 3v6M12 15v6"/></svg>Courts</a>
+    <a href="#bookings" data-tab="bookings"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>My bookings</a>
+    <a href="#owner" data-tab="owner"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/></svg>Owner</a>
+  </nav>
+</div>
+
+<div id="sheet-wrap" class="sheet-wrap" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <section id="sheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"></section>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

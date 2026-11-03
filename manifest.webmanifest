@@ -1,0 +1,15 @@
+{
+  "name": "Pickle Courts Cebu",
+  "short_name": "Pickle Courts",
+  "description": "Find and book pickleball courts across Cebu.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4ede1",
+  "theme_color": "#1e7a46",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
