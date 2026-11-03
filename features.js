@@ -141,6 +141,7 @@ function renderQueue(id) {
       <h1>Open play at ${esc(v.name)}</h1>
       <div class="hero-tags" style="padding-right:0"><span class="sticker s-neon">Live demo</span><span class="sticker s-paper">${opSchedule(op)}</span><span class="sticker s-pink">${peso(op.fee)}/head</span></div>
     </section>
+    <div class="cols"><div class="stack col-main">
     ${me}
     <h2>On court now</h2>
     <div class="courts-live">${q.courts.map((c, i) => `
@@ -150,6 +151,7 @@ function renderQueue(id) {
           <div class="side">${c.slice(0, 2).map(chip).join('')}</div><div class="net-line"></div><div class="side">${c.slice(2, 4).map(chip).join('')}</div>
         </div>
       </div>`).join('')}</div>
+    </div><div class="stack col-side">
     <div class="row between"><h2>In line</h2><span class="small muted">${q.line.length} paddles · game ${q.game}</span></div>
     ${q.line.length ? `<ol class="line">${q.line.map((p, i) => `
       <li class="${p.me ? 'me' : ''} ${i < 4 ? 'next' : ''}"><span class="pos num">${i + 1}</span><span class="nm">${esc(p.name)}${p.me ? ' (you)' : ''}</span><span class="lvl">${esc(p.level)}</span>${i === 0 ? '<span class="sticker s-neon tag">Next game</span>' : ''}</li>`).join('')}</ol>`
@@ -160,6 +162,7 @@ function renderQueue(id) {
       <p class="small" style="margin:0">When a game ends, tap its court. The 4 players go to the back of the line and the next 4 step on. In the real app only the venue's staff see these buttons.</p>
       <div class="row">${courtNames.map((n, i) => `<button class="btn sm primary" data-next="${i}">${esc(n)} game over</button>`).join('')}</div>
     </div>
+    </div></div>
   </div>`;
 
   $('#join')?.addEventListener('submit', e => {

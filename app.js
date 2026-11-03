@@ -86,12 +86,14 @@ function renderCourts() {
       ${ballSticker()}
       ${retroBadge()}
     </section>
+    <div class="filters">
     <input id="q" class="search" type="search" placeholder="Search venue or town" value="${esc(state.q)}" aria-label="Search venues">
     <div class="chips" role="group" aria-label="Area">${AREAS.map(a => `<button class="chip" data-area="${a}" aria-pressed="${a === state.area}">${a}</button>`).join('')}</div>
     ${dateStrip(state.date)}
     <div class="row between">
       <button class="btn sm ${state.near ? 'primary' : ''}" id="near" aria-pressed="${!!state.near}">${state.near ? 'Nearest first ✓' : 'Near me'}</button>
       <div class="seg" role="group" aria-label="View"><button data-mode="list" aria-pressed="${state.mode === 'list'}">List</button><button data-mode="map" aria-pressed="${state.mode === 'map'}">Map</button></div>
+    </div>
     </div>
     ${state.mode === 'map' ? `<div id="map" class="map"></div>` : `
     <div class="list">
@@ -189,6 +191,7 @@ function renderVenue(id) {
   view.innerHTML = `
   <div class="stack">
     <a class="back" href="#courts">← All courts</a>
+    <div class="cols"><div class="stack col-main">
     <section class="venue-hero">
     <span class="tape" aria-hidden="true"></span>
     <span class="sticker corner ${STICK[v.plan][0]}">${STICK[v.plan][1]}</span>
@@ -209,7 +212,9 @@ function renderVenue(id) {
       ${v.link ? `<a class="btn sm ghost" href="${v.link}" target="_blank" rel="noopener">More info</a>` : ''}
     </div>
     ${v.openPlay ? `<h2>Open play</h2>${openPlayCard(v)}` : ''}
+    </div><div class="stack col-side">
     ${body}
+    </div></div>
   </div>
   ${v.plan === 'pro' ? `<div class="bookbar" id="bookbar" ${state.picked.size ? '' : 'hidden'}><div>
     <div><span class="small muted">${state.picked.size} hr · ${esc(court.name)}</span><br><b>${peso([...state.picked].reduce((t, h) => t + DB.priceAt(v, h), 0))}</b></div>
@@ -314,7 +319,7 @@ function renderBookings() {
   view.innerHTML = `
   <div class="stack">
     <div class="hero"><span class="eyebrow">Your games</span><h1>My bookings</h1></div>
-    ${list.length ? list.map(b => {
+    ${list.length ? '<div class="bk-grid">' + list.map(b => {
       const v = DB.venue(b.venueId); const c = v.courts.find(c => c.id === b.courtId);
       const [cls, label] = STATUS[b.status];
       const upcoming = b.status !== 'cancelled' && !isPast(b.date, Math.max(...b.hours));
@@ -326,7 +331,7 @@ function renderBookings() {
         ${upcoming ? `<button class="btn sm ghost danger" data-cancel="${b.id}">Cancel</button>` : ''}</div>
         ${upcoming ? `<button class="btn sm primary" data-share="${b.id}" style="justify-self:start">Share with your group</button>` : ''}
       </div>`;
-    }).join('') : `<div class="empty"><b>No bookings yet</b><span>Pick a venue with open slots and book an hour.</span><a class="btn primary" href="#courts">Find a court</a></div>`}
+    }).join('') + '</div>' : `<div class="empty"><b>No bookings yet</b><span>Pick a venue with open slots and book an hour.</span><a class="btn primary" href="#courts">Find a court</a></div>`}
     ${list.some(b => b.status === 'pending') ? `<p class="small muted">Waiting bookings turn green once the venue checks your payment. Try it: open the Owner tab and confirm.</p>` : ''}
   </div>`;
   view.querySelectorAll('[data-cancel]').forEach(b => b.onclick = () => { DB.setStatus(b.dataset.cancel, 'cancelled'); toast('Booking cancelled. The slot is open again.'); renderBookings(); });
@@ -354,6 +359,7 @@ function renderOwner() {
     <label for="owner-venue" ${pros.length < 2 ? 'hidden' : ''}>Viewing as owner of
       <select id="owner-venue">${pros.map(p => `<option value="${p.id}" ${p.id === v.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
     </label>
+    <div class="cols"><div class="stack col-main">
     <div class="stats">
       <div class="stat ${pending.length ? 'attn' : ''}"><span class="eyebrow">To confirm</span><b>${pending.length}</b><span class="small muted">online bookings</span></div>
       <div class="stat"><span class="eyebrow">Court use</span><b>${Math.round(booked / capacity * 100)}%</b><span class="small muted">${booked} of ${capacity} hrs</span></div>
@@ -368,6 +374,20 @@ function renderOwner() {
       <div class="row"><button class="btn sm primary" data-confirm="${b.id}">Payment received, confirm</button><button class="btn sm ghost danger" data-decline="${b.id}">Decline</button></div>
     </div>`).join('') : `<div class="empty small">Nothing to confirm. New online bookings show up here.</div>`}
 
+
+    ${v.openPlay ? `<a class="op-promo" href="#queue-${v.id}"><span class="sticker s-pink">Open play</span><span>Run the paddle-stack queue</span><b class="go">Open →</b></a>` : ''}
+
+    <div class="row between"><h2>Photos</h2><span class="small muted">Your sales pitch</span></div>
+    ${ownerPhotos(v)}
+
+    <div class="bk">
+      <span class="eyebrow">For venue owners</span>
+      <h3>Get your courts on ${esc(APP_NAME)}</h3>
+      <p class="small" style="margin:0">Free listing for every Cebu court. Online booking, this dashboard and GCash checkout for ₱1,500 a month, about 3 court-hours at your rate. First month free for founding venues.</p>
+      <button class="btn sm primary" id="pitch" style="justify-self:start">See the plans</button>
+    </div>
+    <button class="btn ghost sm" id="reset" style="justify-self:start">Reset demo data</button>
+    </div><div class="stack col-side">
     <div class="row between"><h2>Schedule</h2><span class="small muted">Tap an open hour to block it</span></div>
     ${dateStrip(date)}
     <div class="sched"><table style="min-width:${64 + v.courts.length * 104}px">
@@ -382,19 +402,7 @@ function renderOwner() {
       }).join('')}</tr>`).join('')}</tbody>
     </table></div>
     <p class="small muted">"Booked" hours are sample walk-ins and regulars. Blocked hours disappear from the player app, for tournaments, clinics or maintenance.</p>
-
-    ${v.openPlay ? `<a class="op-promo" href="#queue-${v.id}"><span class="sticker s-pink">Open play</span><span>Run the paddle-stack queue</span><b class="go">Open →</b></a>` : ''}
-
-    <div class="row between"><h2>Photos</h2><span class="small muted">Your sales pitch</span></div>
-    ${ownerPhotos(v)}
-
-    <div class="bk">
-      <span class="eyebrow">For venue owners</span>
-      <h3>Get your courts on ${esc(APP_NAME)}</h3>
-      <p class="small" style="margin:0">Free listing for every Cebu court. Online booking, this dashboard and GCash checkout for ₱1,500 a month, about 3 court-hours at your rate. First month free for founding venues.</p>
-      <button class="btn sm primary" id="pitch" style="justify-self:start">See the plans</button>
-    </div>
-    <button class="btn ghost sm" id="reset" style="justify-self:start">Reset demo data</button>
+    </div></div>
   </div>`;
 
   $('#owner-venue').onchange = e => { state.ownerVenue = e.target.value; renderOwner(); };
