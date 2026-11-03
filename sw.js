@@ -1,7 +1,7 @@
 // Caches the app shell so it opens offline and installs as an app.
 // Bump VERSION whenever you deploy changes so phones pick up the new files.
-const VERSION = 'pickle-courts-v3';
-const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'app.js', 'vendor/leaflet.js', 'vendor/leaflet.css',
+const VERSION = 'pickle-courts-v4';
+const SHELL = ['./', 'index.html', 'styles.css', 'data.js', 'features.js', 'app.js', 'vendor/leaflet.js', 'vendor/leaflet.css',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL))); self.skipWaiting(); });

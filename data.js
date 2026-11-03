@@ -18,6 +18,8 @@ const VENUES = [
     id: 'dinkwave-oslob', name: 'Dinkwave Oslob', area: 'South Cebu', town: 'Oslob',
     lat: 9.5190, lng: 123.4310, plan: 'pro', open: 6, close: 22, price: 400, peakPrice: 450, peakFrom: 17,
     setting: 'Shaded outdoor', courts: [{ id: 'c1', name: 'Court 1' }, { id: 'c2', name: 'Court 2' }],
+    openPlay: { days: [0, 1, 2, 3, 4, 5, 6], start: 6, end: 9, courts: ['c1', 'c2'], fee: 150, level: 'All levels' },
+    art: [['net', 'Both courts under the shade net'], ['sun', 'Early games before the heat'], ['court', 'Court 2, fresh lines']],
     notes: ['Shade net over both courts', 'Paddle rental available'], link: 'https://dinkwave-oslob.web.app/'
   },
   {
@@ -94,8 +96,15 @@ const DB = {
 
   priceAt(venue, hour) { return hour >= (venue.peakFrom ?? 99) ? (venue.peakPrice ?? venue.price) : venue.price; },
 
-  // status of one hour slot: 'open' | 'taken' | 'mine' | 'blocked'
+  // Open play: courts set aside for drop-in games with a paddle-stack queue
+  isOpenPlay(venue, courtId, date, hour) {
+    const op = venue.openPlay; if (!op) return false;
+    return op.courts.includes(courtId) && op.days.includes(new Date(date + 'T00:00:00').getDay()) && hour >= op.start && hour < op.end;
+  },
+
+  // status of one hour slot: 'open' | 'taken' | 'mine' | 'blocked' | 'openplay'
   slot(venue, courtId, date, hour) {
+    if (this.isOpenPlay(venue, courtId, date, hour)) return 'openplay';
     const s = load();
     if (s.blocks.some(b => b.venueId === venue.id && b.courtId === courtId && b.date === date && b.hour === hour)) return 'blocked';
     const b = s.bookings.find(b => b.venueId === venue.id && b.courtId === courtId && b.date === date && b.hours.includes(hour) && b.status !== 'cancelled');
@@ -131,6 +140,45 @@ const DB = {
     const i = s.blocks.findIndex(b => b.venueId === venueId && b.courtId === courtId && b.date === date && b.hour === hour);
     if (i >= 0) s.blocks.splice(i, 1); else s.blocks.push({ venueId, courtId, date, hour });
     save(s);
+  },
+
+  // ---------- open play queue (Firestore: one doc per session, updated in a transaction) ----------
+  queue(venueId) {
+    const s = load(); s.queues = s.queues || {};
+    if (!s.queues[venueId]) {
+      const p = (name, level) => ({ id: name.toLowerCase(), name, level });
+      s.queues[venueId] = {
+        game: 14,
+        courts: [[p('Mika', '3.5'), p('Jun', '3.5'), p('Bea', '3.0'), p('Paolo', '3.5')], [p('Rhea', '3.0'), p('Carlo', '3.0'), p('Iya', 'Beginner'), p('Nonoy', '3.0')]],
+        line: [p('Kyla', '3.0'), p('Ben', '3.5'), p('Trish', 'Beginner'), p('Dodong', '3.0'), p('Ana', '3.5'), p('Jomar', '3.0')]
+      };
+      save(s);
+    }
+    return s.queues[venueId];
+  },
+  joinQueue(venueId, name, level) {
+    this.queue(venueId);
+    const st = load(); const qq = st.queues[venueId];
+    if (qq.line.some(p => p.me) || qq.courts.flat().some(p => p.me)) return;
+    qq.line.push({ id: 'me', name, level, me: true }); save(st);
+  },
+  leaveQueue(venueId) {
+    const s = load(); const q = s.queues?.[venueId]; if (!q) return;
+    q.line = q.line.filter(p => !p.me); save(s);
+  },
+  // the 4 players coming off go to the back of the line; the next 4 step on
+  nextGame(venueId, courtIdx) {
+    const s = load(); const q = s.queues?.[venueId]; if (!q) return;
+    const off = q.courts[courtIdx] || [];
+    q.courts[courtIdx] = q.line.splice(0, 4);
+    q.line.push(...off); q.game++; save(s);
+  },
+
+  // ---------- photos (demo: this browser only; Firebase: shipped with the app or Storage on Blaze) ----------
+  photos(venueId) { try { return JSON.parse(localStorage.getItem('pc-photos-' + venueId)) || []; } catch (e) { return memory['photos-' + venueId] || []; } },
+  savePhotos(venueId, list) {
+    try { localStorage.setItem('pc-photos-' + venueId, JSON.stringify(list)); return true; }
+    catch (e) { memory['photos-' + venueId] = list; return false; }
   },
 
   reset() { save({ bookings: [], blocks: [] }); }

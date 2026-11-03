@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pickle Courts Cebu</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem("pc-theme")||"light"}catch(e){document.documentElement.dataset.theme="light"}</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Find and book pickleball courts across Cebu.">
-<meta name="theme-color" content="#1e7a46">
+<meta name="theme-color" content="#f4ede1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500..800&family=Figtree:wght@400..700&family=DM+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500..800&family=Figtree:wght@400..700&family=DM+Mono:wght@500&family=Caveat:wght@600&display=swap">
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,7 +25,7 @@
       <img src="icons/icon.svg" alt="" width="30" height="30">
       <span id="brand-name">Pickle Courts</span><span class="sticker s-neon brand-tag">Cebu</span>
     </a>
-    <button id="install" class="install" hidden>Install app</button>
+    <div class="row" style="flex-wrap:nowrap"><button id="install" class="install" hidden>Install app</button><button id="theme" class="theme-btn" aria-label="Switch to dark mode"></button></div>
   </header>
 
   <main id="view" tabindex="-1"></main>
@@ -44,6 +45,7 @@
 
 <script src="vendor/leaflet.js"></script>
 <script src="data.js"></script>
+<script src="features.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

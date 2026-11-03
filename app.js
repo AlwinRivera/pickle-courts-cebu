@@ -95,9 +95,11 @@ function renderCourts() {
     </div>
     ${state.mode === 'map' ? `<div id="map" class="map"></div>` : `
     <div class="list">
+      ${venues.filter(v => v.openPlay).map(v => `<a class="op-promo" href="#queue-${v.id}"><span class="sticker s-pink">Open play</span><span><b>${esc(v.name)}</b> · ${DB.queue(v.id).line.length} paddles in line</span><b class="go">Join →</b></a>`).join('')}
       ${venues.map(v => `
         <a class="card venue-card" href="#venue-${v.id}">
           <span class="sticker corner ${STICK[v.plan][0]}">${STICK[v.plan][1]}</span>
+          <img class="cover" src="${coverSrc(v)}" alt="" loading="lazy">
           <div class="title"><h3>${esc(v.name)}</h3>${priceLabel(v)}</div>
           <div class="meta">${v.km != null ? `<span class="num">${v.km < 10 ? v.km.toFixed(1) : Math.round(v.km)} km</span>` : ''}<span>${esc(v.town)}${v.town !== v.area ? ', ' + esc(v.area) : ''}</span><span>${v.courts.length} court${v.courts.length === 1 ? '' : 's'}</span><span>${esc(v.setting)}</span></div>
           <div>${planBadge(v, state.date)}</div>
@@ -173,7 +175,7 @@ function renderVenue(id) {
         if (isPast(state.date, h)) st = 'past';
         const sel = state.picked.has(h);
         const peak = h >= (v.peakFrom ?? 99) && v.peakPrice !== v.price;
-        const p = st === 'open' ? peso(DB.priceAt(v, h)) : st === 'mine' ? 'Your booking' : st === 'past' ? 'Past' : 'Booked';
+        const p = st === 'open' ? peso(DB.priceAt(v, h)) : st === 'mine' ? 'Your booking' : st === 'openplay' ? 'Open play' : st === 'past' ? 'Past' : 'Booked';
         return `<button class="slot ${peak && st === 'open' ? 'peak' : ''}" data-hour="${h}" data-state="${st}" aria-pressed="${sel}" ${st !== 'open' ? 'disabled' : ''}><span class="t">${fmtHour(h)}</span><span class="p">${p}</span></button>`;
       }).join('')}</div>
       <p class="small muted">Pick up to 4 hours. You pay the venue directly by GCash or Maya; the venue confirms your slot.</p>
@@ -201,10 +203,12 @@ function renderVenue(id) {
       <div><span class="eyebrow">Hours</span><b>${fmtHour(v.open).replace(' ', '')}–${fmtHour(v.close).replace(' ', '')}</b><span class="small muted">daily</span></div>
     </div>
     </section>
+    ${gallery(v)}
     <div class="links">
       <a class="btn sm" href="${directions}" target="_blank" rel="noopener">Directions</a>
       ${v.link ? `<a class="btn sm ghost" href="${v.link}" target="_blank" rel="noopener">More info</a>` : ''}
     </div>
+    ${v.openPlay ? `<h2>Open play</h2>${openPlayCard(v)}` : ''}
     ${body}
   </div>
   ${v.plan === 'pro' ? `<div class="bookbar" id="bookbar" ${state.picked.size ? '' : 'hidden'}><div>
@@ -221,6 +225,7 @@ function renderVenue(id) {
     const y = window.scrollY; renderVenue(id); window.scrollTo(0, y);
   });
   $('#claim')?.addEventListener('click', () => openClaim(v));
+  bindGallery(v);
   $('#continue')?.addEventListener('click', () => openCheckout(v, court, state.date, [...state.picked]));
 }
 
@@ -287,18 +292,6 @@ function openCheckout(v, court, date, hours) {
 }
 function openSheet(html) {
   $('#sheet').innerHTML = html; $('#sheet-wrap').hidden = false; document.body.style.overflow = 'hidden';
-}
-function openClaim(v) {
-  openSheet(`
-    <div class="row between"><h2 id="sheet-title">Put ${esc(v.name)} on ${esc(APP_NAME)}</h2><button class="btn sm ghost" data-close>Close</button></div>
-    <p class="muted" style="margin:0">Players across Cebu already find your courts here. Turn on live booking and stop answering "available pa?" messages.</p>
-    <div class="plans">
-      <div class="plan"><span class="sticker s-paper">Free listing</span><b>₱0</b><span class="small muted">On the map with your hours, photos and contact link.</span></div>
-      <div class="plan hot"><span class="sticker s-neon">Pro</span><b>₱1,500<small>/month</small></b><span class="small">Live booking, GCash checkout, owner dashboard, blocked times. About 3 court-hours a month${v.price ? ' at ' + peso(v.price) + '/hr' : ''}.</span></div>
-      <div class="plan"><span class="sticker s-pink">First 10 venues</span><b>₱999<small>/month</small></b><span class="small muted">First month free, then ₱999 locked for a year.</span></div>
-    </div>
-    ${CONTACT_URL ? `<a class="btn primary full" href="${CONTACT_URL}" target="_blank" rel="noopener">Message us to claim it</a>` : `<p class="small muted" style="margin:0">Interested? Message the person who sent you this link.</p>`}
-    <a class="btn full" href="#owner" data-close>See the owner dashboard</a>`);
 }
 async function shareBooking(b) {
   const v = DB.venue(b.venueId), c = v.courts.find(c => c.id === b.courtId);
@@ -383,11 +376,17 @@ function renderOwner() {
         const st = DB.slot(v, c.id, date, h);
         if (st === 'mine') { const b = DB.booking(v.id, c.id, date, h); return `<td><span class="cell ${b.status === 'pending' ? 'pend' : 'mine'}">${b.status === 'pending' ? 'Pending · ' : ''}${esc(b.name.split(' ')[0])}</span></td>`; }
         if (st === 'taken') return `<td><span class="cell taken">Booked</span></td>`;
+        if (st === 'openplay') return `<td><span class="cell openplay">Open play</span></td>`;
         if (isPast(date, h)) return `<td><span class="cell taken">—</span></td>`;
         return `<td><button class="cell ${st}" data-block="${c.id}|${h}">${st === 'blocked' ? 'Blocked' : 'Open'}</button></td>`;
       }).join('')}</tr>`).join('')}</tbody>
     </table></div>
     <p class="small muted">"Booked" hours are sample walk-ins and regulars. Blocked hours disappear from the player app, for tournaments, clinics or maintenance.</p>
+
+    ${v.openPlay ? `<a class="op-promo" href="#queue-${v.id}"><span class="sticker s-pink">Open play</span><span>Run the paddle-stack queue</span><b class="go">Open →</b></a>` : ''}
+
+    <div class="row between"><h2>Photos</h2><span class="small muted">Your sales pitch</span></div>
+    ${ownerPhotos(v)}
 
     <div class="bk">
       <span class="eyebrow">For venue owners</span>
@@ -404,6 +403,7 @@ function renderOwner() {
   view.querySelectorAll('[data-decline]').forEach(b => b.onclick = () => { DB.setStatus(b.dataset.decline, 'cancelled'); toast('Declined. The slot is open again.'); renderOwner(); });
   view.querySelectorAll('[data-block]').forEach(b => b.onclick = () => { const [c, h] = b.dataset.block.split('|'); DB.toggleBlock(v.id, c, date, +h); renderOwner(); });
   $('#pitch').onclick = () => openClaim(v);
+  bindOwnerPhotos(v, () => { const y = window.scrollY; renderOwner(); window.scrollTo(0, y); });
   let confirmReset = false;
   $('#reset').onclick = e => {
     if (!confirmReset) { confirmReset = true; e.target.textContent = 'Tap again to clear all demo bookings'; return; }
@@ -423,16 +423,19 @@ function footer() {
 function route() {
   const h = location.hash.slice(1) || 'courts';
   if (!$('#sheet-wrap').hidden) closeSheet();
-  const tab = h.startsWith('venue-') ? 'courts' : h;
+  const tab = h.startsWith('venue-') || h.startsWith('queue-') ? 'courts' : h;
   document.querySelectorAll('.tabs a').forEach(a => { if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   if (map && !(h === 'courts' && state.mode === 'map')) { map.remove(); map = null; }
   if (h.startsWith('venue-')) renderVenue(h.slice(6));
+  else if (h.startsWith('queue-')) renderQueue(h.slice(6));
   else if (h === 'bookings') renderBookings();
   else if (h === 'owner') renderOwner();
   else renderCourts();
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', route);
+applyTheme(currentTheme());
+$('#theme').onclick = () => applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
 document.title = APP_NAME; $('#brand-name').textContent = APP_NAME;
 route();
 
